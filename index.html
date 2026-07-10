@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Joker Karo JurTul</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --felt:#0d3320; --felt-mid:#0f3d27; --felt-lt:#144d30;
+      --gold:#c9a84c; --gold-lt:#e8c878; --cream:#f5ead8;
+      --red:#c0392b; --purple:#7d3c98; --ink:#1a1a2e; --slate:#8a9bb0;
+      --shadow:0 8px 32px rgba(0,0,0,0.45);
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'DM Sans',sans-serif;background:var(--ink);background-image:radial-gradient(ellipse at 20% 10%,#1a2e4a 0%,transparent 50%),radial-gradient(ellipse at 80% 90%,#2a1040 0%,transparent 50%);min-height:100vh;color:var(--cream);padding:0 0 60px;}
+
+    /* ── AUTH SCREENS ── */
+    .auth-wrap{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
+    .auth-logo{font-family:'Playfair Display',serif;font-size:2.4rem;font-weight:900;color:var(--gold);text-shadow:0 0 40px rgba(201,168,76,.35);margin-bottom:6px;text-align:center;}
+    .auth-logo span{color:var(--cream);}
+    .auth-tagline{font-size:.8rem;letter-spacing:.15em;text-transform:uppercase;color:var(--slate);margin-bottom:32px;text-align:center;}
+    .auth-card{background:var(--felt);border:1px solid rgba(201,168,76,.2);border-radius:16px;padding:36px;width:100%;max-width:420px;box-shadow:var(--shadow);}
+    .auth-card::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(45deg,transparent,transparent 40px,rgba(255,255,255,.012) 40px,rgba(255,255,255,.012) 41px);pointer-events:none;border-radius:16px;}
+    .auth-title{font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--gold);margin-bottom:24px;text-align:center;}
+    .auth-field{display:flex;flex-direction:column;gap:7px;margin-bottom:16px;}
+    .auth-field label{font-size:.75rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--slate);}
+    .auth-field input{background:rgba(0,0,0,.4);border:1.5px solid rgba(201,168,76,.25);border-radius:8px;padding:12px 14px;font-family:'DM Mono',monospace;font-size:.95rem;color:var(--cream);width:100%;transition:border-color .2s;}
+    .auth-field input:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,.12);}
+    .auth-btn{width:100%;padding:13px;background:linear-gradient(135deg,var(--gold),#a07830);color:#1a0e00;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-weight:700;font-size:1rem;cursor:pointer;transition:all .18s;margin-top:8px;}
+    .auth-btn:hover{filter:brightness(1.12);transform:translateY(-1px);}
+    .auth-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+    .auth-error{background:rgba(192,57,43,.2);border:1px solid rgba(192,57,43,.4);border-radius:8px;padding:11px 14px;font-size:.88rem;color:#f4a5a0;margin-bottom:16px;display:none;}
+    .auth-info{background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.2);border-radius:8px;padding:11px 14px;font-size:.85rem;color:#b0c0b8;margin-bottom:16px;line-height:1.6;}
+    .auth-info strong{color:var(--gold-lt);}
+    .qr-wrap{text-align:center;margin:16px 0;}
+    .qr-wrap img{border-radius:8px;border:3px solid rgba(201,168,76,.3);}
+    .totp-input{font-family:'DM Mono',monospace;font-size:1.6rem;text-align:center;letter-spacing:.3em;padding:14px;}
+    .auth-link{text-align:center;margin-top:16px;font-size:.85rem;color:var(--slate);}
+    .auth-link a{color:var(--gold);cursor:pointer;text-decoration:none;}
+    .auth-link a:hover{color:var(--gold-lt);}
+    .auth-divider{height:1px;background:linear-gradient(90deg,transparent,rgba(201,168,76,.2),transparent);margin:20px 0;}
+
+    /* ── HEADER ── */
+    .site-header{background:linear-gradient(180deg,#0a0a18 0%,transparent 100%);text-align:center;padding:40px 20px 30px;position:relative;}
+    .site-header::after{content:'';display:block;margin:18px auto 0;width:120px;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);}
+    .site-header h1{font-family:'Playfair Display',serif;font-size:clamp(2.2rem,6vw,3.8rem);font-weight:900;letter-spacing:.04em;color:var(--gold);text-shadow:0 0 40px rgba(201,168,76,.35);}
+    .site-header h1 span{color:var(--cream);}
+    .site-header p{font-size:.85rem;letter-spacing:.15em;text-transform:uppercase;color:var(--slate);margin-top:6px;}
+    .header-controls{position:absolute;top:18px;right:20px;display:flex;gap:8px;align-items:center;}
+    .lang-btn{background:rgba(0,0,0,.4);border:1.5px solid rgba(201,168,76,.25);border-radius:6px;color:var(--slate);font-family:'DM Mono',monospace;font-size:.78rem;font-weight:600;letter-spacing:.06em;padding:5px 10px;cursor:pointer;transition:all .18s;}
+    .lang-btn:hover{border-color:var(--gold);color:var(--gold);}
+    .lang-btn.active{background:rgba(201,168,76,.15);border-color:var(--gold);color:var(--gold-lt);}
+    .logout-btn{background:rgba(192,57,43,.2);border:1.5px solid rgba(192,57,43,.35);border-radius:6px;color:#f4a5a0;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:600;padding:5px 10px;cursor:pointer;transition:all .18s;}
+    .logout-btn:hover{background:rgba(192,57,43,.35);}
+    .user-pill{font-family:'DM Mono',monospace;font-size:.75rem;color:var(--slate);padding:5px 10px;background:rgba(0,0,0,.3);border-radius:6px;border:1px solid rgba(255,255,255,.08);}
+
+    /* ── LAYOUT ── */
+    .wrap{max-width:1100px;margin:0 auto;padding:0 20px;}
+    .card{background:var(--felt);border:1px solid rgba(201,168,76,.18);border-radius:16px;padding:28px;margin-bottom:22px;box-shadow:var(--shadow);position:relative;overflow:hidden;}
+    .card::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(45deg,transparent,transparent 40px,rgba(255,255,255,.012) 40px,rgba(255,255,255,.012) 41px);pointer-events:none;}
+    .section-title{font-family:'Playfair Display',serif;font-size:1.15rem;color:var(--gold);letter-spacing:.06em;margin-bottom:18px;padding-bottom:10px;border-bottom:1px solid rgba(201,168,76,.2);}
+    .info-box{background:rgba(0,0,0,.35);border-left:3px solid var(--gold);border-radius:8px;padding:16px 18px;margin-bottom:24px;font-size:.88rem;color:#b0c0b8;line-height:1.7;}
+    .info-box strong{color:var(--gold-lt);}
+    .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+    .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+    @media(max-width:700px){.grid-3,.grid-4{grid-template-columns:1fr 1fr;}}
+    @media(max-width:480px){.grid-3,.grid-4{grid-template-columns:1fr;}}
+    .field{display:flex;flex-direction:column;gap:6px;}
+    .field label{font-size:.78rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--slate);}
+    input[type=text],input[type=number],select{background:rgba(0,0,0,.4);border:1.5px solid rgba(201,168,76,.25);border-radius:8px;padding:11px 14px;font-family:'DM Mono',monospace;font-size:.95rem;color:var(--cream);width:100%;transition:border-color .2s;appearance:none;}
+    input:focus,select:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,.12);}
+    select option{background:#1a2e18;}
+    .check-row{display:flex;align-items:center;gap:9px;padding:9px 14px;background:rgba(0,0,0,.3);border-radius:8px;cursor:pointer;}
+    .check-row input[type=checkbox]{width:17px;height:17px;accent-color:var(--gold);cursor:pointer;}
+    .check-row label{font-size:.88rem;font-weight:500;color:var(--cream);cursor:pointer;}
+    .player-add-row{display:flex;gap:10px;margin-bottom:14px;}
+    .player-add-row input{flex:1;}
+    .player-chip{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:rgba(0,0,0,.35);border:1px solid rgba(201,168,76,.15);border-radius:8px;margin-bottom:8px;font-weight:500;animation:fadeIn .2s ease;}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+    button{font-family:'DM Sans',sans-serif;font-weight:600;font-size:.9rem;letter-spacing:.04em;padding:11px 20px;border:none;border-radius:8px;cursor:pointer;transition:all .18s;}
+    .btn-gold{background:linear-gradient(135deg,var(--gold),#a07830);color:#1a0e00;}
+    .btn-gold:hover{filter:brightness(1.15);transform:translateY(-1px);box-shadow:0 4px 14px rgba(201,168,76,.35);}
+    .btn-green{background:linear-gradient(135deg,#27ae60,#1e8449);color:#fff;}
+    .btn-green:hover{filter:brightness(1.1);transform:translateY(-1px);}
+    .btn-red{background:linear-gradient(135deg,#c0392b,#922b21);color:#fff;}
+    .btn-red:hover{filter:brightness(1.1);transform:translateY(-1px);}
+    .btn-ghost{background:transparent;border:1.5px solid rgba(201,168,76,.35);color:var(--gold);}
+    .btn-ghost:hover{background:rgba(201,168,76,.08);}
+    .btn-sm{padding:7px 13px;font-size:.82rem;}
+    .round-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:22px;}
+    .round-label{font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--gold);}
+    .pot-badge{display:flex;align-items:center;gap:7px;background:rgba(39,174,96,.18);border:1px solid rgba(39,174,96,.35);border-radius:30px;padding:8px 18px;font-family:'DM Mono',monospace;font-size:1.1rem;font-weight:500;color:#5ddb8f;}
+    .btn-row{display:flex;gap:9px;flex-wrap:wrap;}
+    .score-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;}
+    .score-col{background:rgba(0,0,0,.35);border:1.5px solid rgba(201,168,76,.18);border-radius:12px;padding:16px;position:relative;transition:border-color .2s;}
+    .score-col.is-winner{border-color:var(--gold);box-shadow:0 0 16px rgba(201,168,76,.2);}
+    .score-col-name{font-family:'Playfair Display',serif;font-size:1.15rem;font-weight:700;text-align:center;margin-bottom:10px;color:var(--cream);}
+    .tahan-pill{text-align:center;background:rgba(30,132,73,.25);border:1px solid rgba(30,132,73,.4);color:#5ddb8f;font-family:'DM Mono',monospace;font-size:.88rem;font-weight:500;border-radius:20px;padding:5px 0;margin-bottom:10px;}
+    .beli-pill{text-align:center;background:rgba(243,156,18,.15);border:1px solid rgba(243,156,18,.35);color:#f3c218;font-size:.8rem;font-weight:600;border-radius:20px;padding:4px 0;margin-bottom:8px;}
+    .score-col .field label{color:#7a9b8a;}
+    .score-col .field+.field{margin-top:9px;}
+    .tidakbeli-row{display:flex;align-items:center;gap:7px;margin-top:10px;padding:7px 10px;border-radius:7px;background:rgba(192,57,43,.1);border:1px solid rgba(192,57,43,.2);}
+    .tidakbeli-row.disabled{opacity:.4;pointer-events:none;}
+    .tidakbeli-row input[type=checkbox]{accent-color:#e74c3c;}
+    .tidakbeli-row label{font-size:.82rem;color:#e88;cursor:pointer;}
+    .history-scroll{overflow-x:auto;}
+    table{width:100%;border-collapse:collapse;font-size:.88rem;}
+    th{font-family:'Playfair Display',serif;font-weight:700;padding:11px 14px;background:rgba(0,0,0,.5);color:var(--gold);border:1px solid rgba(201,168,76,.15);text-align:center;white-space:nowrap;}
+    td{padding:9px 12px;border:1px solid rgba(255,255,255,.07);text-align:center;font-family:'DM Mono',monospace;font-size:.82rem;}
+    tr:hover td{filter:brightness(1.08);}
+    .td-winner-masuk{background:rgba(201,168,76,.25);color:var(--gold-lt);}
+    .td-winner-mintik{background:rgba(125,60,152,.4);color:#d7a8f0;}
+    .td-winner-milim{background:rgba(192,57,43,.4);color:#f4a5a0;}
+    .td-buying{background:rgba(243,156,18,.2);color:#f3c218;}
+    .td-dead{background:rgba(100,100,100,.2);color:#666;}
+    .td-round{background:rgba(0,0,0,.4);color:var(--slate);font-weight:700;}
+    .td-gameover{background:var(--red);color:#fff;font-family:'Playfair Display',serif;font-size:1.1rem;text-align:center;}
+    .tally-item{background:rgba(0,0,0,.3);border:1px solid rgba(201,168,76,.13);border-radius:12px;padding:16px 20px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;animation:fadeIn .25s ease;}
+    .tally-item.dead-player{opacity:.55;}
+    .tally-name{font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--cream);display:flex;align-items:center;gap:9px;}
+    .tally-stats{display:flex;gap:14px;flex-wrap:wrap;font-size:.85rem;}
+    .tally-stat{display:flex;flex-direction:column;align-items:center;gap:2px;}
+    .tally-stat-val{font-family:'DM Mono',monospace;font-weight:700;font-size:1rem;}
+    .tally-stat-lbl{font-size:.7rem;letter-spacing:.07em;text-transform:uppercase;color:var(--slate);}
+    .color-gold{color:var(--gold-lt);} .color-green{color:#5ddb8f;} .color-red{color:#f4a5a0;} .color-purple{color:#d7a8f0;} .color-orange{color:#f3c218;}
+    .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.75rem;font-weight:700;letter-spacing:.04em;}
+    .badge-dead{background:rgba(100,100,100,.4);color:#aaa;}
+    .badge-labas{background:linear-gradient(135deg,#27ae60,#1e8449);color:#fff;}
+    .save-indicator{position:fixed;bottom:20px;right:20px;background:rgba(39,174,96,.9);color:#fff;padding:8px 16px;border-radius:20px;font-size:.8rem;font-weight:600;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999;}
+    .save-indicator.show{opacity:1;}
+    .hidden{display:none!important;}
+    .mt8{margin-top:8px;} .mt16{margin-top:16px;}
+    .divider{height:1px;background:linear-gradient(90deg,transparent,rgba(201,168,76,.2),transparent);margin:22px 0;}
+    .spinner{display:inline-block;width:18px;height:18px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;}
+    @keyframes spin{to{transform:rotate(360deg)}}
+  </style>
+</head>
+<body>
+
+<!-- ══ SAVE INDICATOR ══ -->
+<div class="save-indicator" id="saveIndicator">✓ Game saved</div>
+
+<!-- ══ LOGIN SCREEN ══ -->
+<div class="auth-wrap" id="loginScreen">
+  <div class="auth-logo">🃏 Joker Karo <span>Juru Tulis</span></div>
+  <div class="auth-tagline">Sa dia ho?</div>
+  <div class="auth-card" style="position:relative;">
+    <div class="auth-title">Masuk / Sign In</div>
+    <div class="auth-error" id="loginError"></div>
+    <div class="auth-field">
+      <label>Email</label>
+      <input type="text" id="loginEmail" placeholder="email@domain.com" autocomplete="email" />
+    </div>
+    <div class="auth-field">
+      <label>Password</label>
+      <input type="text" id="loginPassword" placeholder="••••••••" autocomplete="current-password" style="font-family:'DM Mono',monospace;" onfocus="this.type='password'" />
+    </div>
+    <button class="auth-btn" onclick="doLogin()" id="loginBtn">Masuk / Sign In</button>
+  </div>
+</div>
+
+<!-- ══ MFA ENROLL SCREEN ══ -->
+<div class="auth-wrap hidden" id="mfaEnrollScreen">
+  <div class="auth-logo">🃏 Joker Karo <span>Juru Tulis</span></div>
+  <div class="auth-tagline">Sa dia ho?</div>
+  <div class="auth-card" style="position:relative;">
+    <div class="auth-title">Setup Authenticator</div>
+    <div class="auth-info">
+      <strong>First time setup:</strong> Scan this QR code with <strong>Google Authenticator</strong> or <strong>Authy</strong>, then enter the 6-digit code below.
+    </div>
+    <div class="auth-error" id="enrollError"></div>
+    <div class="qr-wrap"><img id="qrCodeImg" src="" width="200" height="200" alt="QR Code" /></div>
+    <div class="auth-field">
+      <label>6-Digit Code</label>
+      <input type="text" id="enrollCode" class="totp-input" placeholder="000000" maxlength="6" inputmode="numeric" />
+    </div>
+    <button class="auth-btn" onclick="doEnrollVerify()" id="enrollBtn">Verify & Continue</button>
+  </div>
+</div>
+
+<!-- ══ MFA VERIFY SCREEN ══ -->
+<div class="auth-wrap hidden" id="mfaVerifyScreen">
+  <div class="auth-logo">🃏 Joker Karo <span>Juru Tulis</span></div>
+  <div class="auth-tagline">Sa dia ho?</div>
+  <div class="auth-card" style="position:relative;">
+    <div class="auth-title">🔐 Two-Factor Auth</div>
+    <div class="auth-info">
+      Open your authenticator app and enter the <strong>6-digit code</strong> for Joker Karo JurTul.
+    </div>
+    <div class="auth-error" id="verifyError"></div>
+    <div class="auth-field">
+      <label>6-Digit Code</label>
+      <input type="text" id="verifyCode" class="totp-input" placeholder="000000" maxlength="6" inputmode="numeric" />
+    </div>
+    <button class="auth-btn" onclick="doMfaVerify()" id="verifyBtn">Verify</button>
+    <div class="auth-link"><a onclick="doLogout()">← Back to login</a></div>
+  </div>
+</div>
+
+<!-- ══ MAIN APP ══ -->
+<div id="mainApp" class="hidden">
+
+  <div class="site-header">
+    <div class="header-controls">
+      <span class="user-pill" id="userEmail"></span>
+      <button class="lang-btn active" id="btn-id" onclick="setLang('id')">ID</button>
+      <button class="lang-btn" id="btn-en" onclick="setLang('en')">EN</button>
+      <button class="logout-btn" onclick="doLogout()" id="btn-logout">Keluar</button>
+    </div>
+    <h1>🃏 Joker Karo <span>Juru Tulis</span></h1>
+    <p id="tagline">Sa dia ho?</p>
+  </div>
+
+  <div class="wrap">
+
+    <!-- SETUP -->
+    <div id="setupSection">
+      <div class="card">
+        <div class="section-title" id="lbl-rules-title"></div>
+        <div class="info-box">
+          <strong id="lbl-tahan-head"></strong> <span id="lbl-tahan-body"></span><br>
+          <strong id="lbl-buy-head"></strong> <span id="lbl-buy-body"></span><br>
+          <strong id="lbl-wintype-head"></strong> <span id="lbl-wintype-body"></span><br>
+          <strong id="lbl-money-head"></strong> <span id="lbl-money-body"></span>
+        </div>
+        <div class="section-title" id="lbl-angka-title"></div>
+        <div class="grid-4">
+          <div class="field"><label id="lbl-masuk-val"></label><input type="number" id="masukValue" value="-10" /></div>
+          <div class="field"><label id="lbl-mintik-val"></label><input type="number" id="mintikValue" value="-30" /></div>
+          <div class="field"><label id="lbl-milim-val"></label><input type="number" id="milimValue" value="-50" /></div>
+          <div class="field"><label id="lbl-angka-max"></label><input type="number" id="gameOverTahan" value="-75" /></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="section-title" id="lbl-money-title"></div>
+        <div class="grid-4">
+          <div class="field"><label id="lbl-modal"></label><input type="number" id="initialSum" value="10" min="0" step="0.01" /></div>
+          <div class="field"><label id="lbl-masukan"></label><input type="number" id="masukan" value="1" min="0" step="0.01" /></div>
+          <div class="field"><label id="lbl-harga-mintik"></label><input type="number" id="hargaMintik" value="3" min="0" step="0.01" /></div>
+          <div class="field"><label id="lbl-harga-milim"></label><input type="number" id="hargaMilim" value="5" min="0" step="0.01" /></div>
+          <div class="field"><label id="lbl-beli-1"></label><input type="number" id="beliPertama" value="2" min="0" step="0.01" /></div>
+          <div class="field"><label id="lbl-beli-2"></label><input type="number" id="beliKedua" value="3" min="0" step="0.01" /></div>
+          <div class="field"><label id="lbl-beli-3"></label><input type="number" id="beliKetiga" value="5" min="0" step="0.01" /></div>
+        </div>
+        <div class="divider"></div>
+        <div class="section-title" id="lbl-beli-rules-title"></div>
+        <div class="grid-3">
+          <label class="check-row"><input type="checkbox" id="mandatoryPertama" checked /><label for="mandatoryPertama" id="lbl-mandatory-1"></label></label>
+          <label class="check-row"><input type="checkbox" id="mandatoryKedua" checked /><label for="mandatoryKedua" id="lbl-mandatory-2"></label></label>
+          <label class="check-row"><input type="checkbox" id="mandatoryKetiga" /><label for="mandatoryKetiga" id="lbl-mandatory-3"></label></label>
+        </div>
+      </div>
+      <div class="card">
+        <div class="section-title" id="lbl-players-title"></div>
+        <div class="player-add-row">
+          <input type="text" id="playerNameInput" />
+          <button class="btn-gold" onclick="addPlayer()" id="btn-add"></button>
+        </div>
+        <div id="playersList"></div>
+        <div class="mt16">
+          <button class="btn-green" id="startGameBtn" style="display:none;width:100%;font-size:1rem;padding:14px;" onclick="startGame()">🃏 <span id="lbl-start-game"></span></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- GAME -->
+    <div id="gameSection" class="hidden">
+      <div class="card">
+        <div class="round-bar">
+          <div class="round-label"><span id="lbl-round"></span> <span id="currentRound">1</span></div>
+          <div class="pot-badge">💰 <span id="lbl-kotak"></span>: <span id="potAmount">0.00</span></div>
+          <div class="btn-row">
+            <button class="btn-green" onclick="submitRound()" id="btn-submit"></button>
+            <button class="btn-ghost" onclick="endGame()" id="btn-end"></button>
+            <button class="btn-red btn-sm" onclick="resetGame()" id="btn-reset"></button>
+          </div>
+        </div>
+        <div id="scoreInputs" class="score-grid"></div>
+      </div>
+      <div class="card">
+        <div class="section-title" id="lbl-history-title"></div>
+        <div class="history-scroll"><div id="roundHistory"></div></div>
+      </div>
+      <div class="card">
+        <div class="section-title" id="lbl-tally-title"></div>
+        <div id="playerTally"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════
+   SUPABASE
+══════════════════════════════════════════ */
+const SUPABASE_URL = 'https://ztgjrifxdolhdcptmekr.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_hjdM8RnhRtw-ZbTLaCJ6VA_c7ak0Aar';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/* ══════════════════════════════════════════
+   TRANSLATIONS
+══════════════════════════════════════════ */
+const LANG = {
+  id:{
+    tagline:'Sa dia ho?',rulesTitle:'📖 Ringkasan Peraturan',
+    tahanHead:'Sistem Tahan',tahanBody:'Nilai maksimal adalah 75. Tahan kamu = 75 − angka kumulatif.',
+    buyHead:'Membeli Angka',buyBody:'Jika nilai kartumu melebihi Tahan, kamu harus membeli angka tertinggi dari pemain yang masih hidup.',
+    wintypeHead:'Jenis Menang',wintypeBody:'Masuk, Mintik, Milim — atur nilai angka di bawah.',
+    moneyHead:'Taruhan',moneyBody:'Kotak awal (Modal) + jumlah Beli yang terkumpul selama permainan.',
+    angkaTitle:'🎯 Nilai Angka',masukVal:'Nilai Masuk',mintikVal:'Nilai Mintik',milimVal:'Nilai Milim',angkaMax:'Angka Tertinggi',
+    moneyTitle:'💰 Konfigurasi Uang',modal:'Modal Awal (per pemain)',masukan:'Masukan (per ronde)',
+    hargaMintik:'Harga Mintik',hargaMilim:'Harga Milim',beli1:'Beli Pertama',beli2:'Beli Kedua',beli3:'Beli Ketiga',
+    beliRulesTitle:'⚙️ Aturan Beli Wajib',mandatory1:'Pertama — Wajib',mandatory2:'Kedua — Wajib',mandatory3:'Ketiga — Opsional',
+    playersTitle:'👥 Pemain',playerPlaceholder:'Masukkan nama pemain…',btnAdd:'+ Tambah',btnRemove:'Hapus',startGame:'Mulai Permainan',
+    round:'Ronde',kotak:'Kotak',btnSubmit:'✓ Tulis Ronde',btnEnd:'Akhiri Permainan',btnReset:'Permainan Baru',
+    historyTitle:'📜 Riwayat Ronde',tallyTitle:'🏆 Rekap Pemain',
+    winnerType:'Jenis Pemenang',cardValue:'Nilai Kartu',kalah:'Kalah',tidakBeli:'Tidak Beli',tahan:'Tahan',beli:'Beli',
+    dead:'MATI',gameOver:'🏁 PERMAINAN SELESAI 🏁',labas:'LABAS',
+    alertGameOver:'Permainan Selesai!',alertResults:'Hasil Akhir',alertWins:'memenangkan kotak sebesar',alertTahan:'Tahan',alertNarik:'Narik',
+    errName:'Harap masukkan nama pemain',errExists:'Pemain sudah ada',errMin2:'Minimal 2 pemain untuk memulai',
+    errWinner:'Harap pilih pemenang untuk ronde ini',errScore:'Harap masukkan nilai kartu yang valid untuk',
+    btnLogout:'Keluar',saved:'✓ Game tersimpan',
+  },
+  en:{
+    tagline:'Sa dia ho?',rulesTitle:'📖 Rules Overview',
+    tahanHead:'Tahan System',tahanBody:'Maximum score is 75. Your Tahan = 75 − cumulative angka.',
+    buyHead:'Buying Scores',buyBody:'If your card value exceeds your Tahan, you must buy the highest score from surviving players.',
+    wintypeHead:'Winning Types',wintypeBody:'Masuk, Mintik, Milim — configure angka values below.',
+    moneyHead:'Money (Taruhan)',moneyBody:'Initial pot (Sum) + Beli amounts collected during game.',
+    angkaTitle:'🎯 Angka Values',masukVal:'Masuk Value',mintikVal:'Mintik Value',milimVal:'Milim Value',angkaMax:'Angka Tertinggi (Max)',
+    moneyTitle:'💰 Money Configuration',modal:'Initial Sum (per player)',masukan:'Masukan (per round)',
+    hargaMintik:'Harga Mintik',hargaMilim:'Harga Milim',beli1:'Beli Pertama (1st)',beli2:'Beli Kedua (2nd)',beli3:'Beli Ketiga (3rd)',
+    beliRulesTitle:'⚙️ Mandatory Beli Rules',mandatory1:'Pertama (1st) — Mandatory',mandatory2:'Kedua (2nd) — Mandatory',mandatory3:'Ketiga (3rd) — Optional',
+    playersTitle:'👥 Players',playerPlaceholder:'Enter player name…',btnAdd:'+ Add',btnRemove:'Remove',startGame:'Start Game',
+    round:'Round',kotak:'Pot',btnSubmit:'✓ Submit Round',btnEnd:'End Game',btnReset:'New Game',
+    historyTitle:'📜 Round History',tallyTitle:'🏆 Player Tally',
+    winnerType:'Winner Type',cardValue:'Card value',kalah:'Kalah',tidakBeli:'Tidak Beli',tahan:'Tahan',beli:'Beli',
+    dead:'DEAD',gameOver:'🏁 GAME OVER 🏁',labas:'LABAS',
+    alertGameOver:'Game Over!',alertResults:'Final Results',alertWins:'wins the pot of',alertTahan:'Tahan',alertNarik:'Narik',
+    errName:'Please enter a player name',errExists:'Player already exists',errMin2:'You need at least 2 players to start',
+    errWinner:'Please select a winner for this round',errScore:'Please enter a valid card value for',
+    btnLogout:'Sign Out',saved:'✓ Game saved',
+  }
+};
+
+let currentLang='id';
+function t(k){return LANG[currentLang][k]||k;}
+
+function setLang(lang){
+  currentLang=lang;
+  document.getElementById('btn-id').classList.toggle('active',lang==='id');
+  document.getElementById('btn-en').classList.toggle('active',lang==='en');
+  document.documentElement.lang=lang;
+  applyTranslations();
+  if(!document.getElementById('gameSection').classList.contains('hidden')){
+    setupRoundInputs();updateHistory();updatePlayersTally();
+  }
+}
+
+function applyTranslations(){
+  const map={
+    'tagline':'tagline','lbl-rules-title':'rulesTitle','lbl-tahan-head':'tahanHead','lbl-tahan-body':'tahanBody',
+    'lbl-buy-head':'buyHead','lbl-buy-body':'buyBody','lbl-wintype-head':'wintypeHead','lbl-wintype-body':'wintypeBody',
+    'lbl-money-head':'moneyHead','lbl-money-body':'moneyBody','lbl-angka-title':'angkaTitle',
+    'lbl-masuk-val':'masukVal','lbl-mintik-val':'mintikVal','lbl-milim-val':'milimVal','lbl-angka-max':'angkaMax',
+    'lbl-money-title':'moneyTitle','lbl-modal':'modal','lbl-masukan':'masukan',
+    'lbl-harga-mintik':'hargaMintik','lbl-harga-milim':'hargaMilim',
+    'lbl-beli-1':'beli1','lbl-beli-2':'beli2','lbl-beli-3':'beli3',
+    'lbl-beli-rules-title':'beliRulesTitle','lbl-mandatory-1':'mandatory1','lbl-mandatory-2':'mandatory2','lbl-mandatory-3':'mandatory3',
+    'lbl-players-title':'playersTitle','btn-add':'btnAdd','lbl-start-game':'startGame',
+    'lbl-round':'round','lbl-kotak':'kotak','btn-submit':'btnSubmit','btn-end':'btnEnd','btn-reset':'btnReset',
+    'lbl-history-title':'historyTitle','lbl-tally-title':'tallyTitle','btn-logout':'btnLogout',
+  };
+  Object.entries(map).forEach(([id,key])=>{const el=document.getElementById(id);if(el)el.textContent=t(key);});
+  const pi=document.getElementById('playerNameInput');if(pi)pi.placeholder=t('playerPlaceholder');
+  renderPlayersList();
+}
+
+/* ══════════════════════════════════════════
+   AUTH
+══════════════════════════════════════════ */
+let currentUser=null;
+let mfaFactorId=null;
+let mfaChallengeId=null;
+
+function showScreen(name){
+  ['loginScreen','mfaEnrollScreen','mfaVerifyScreen','mainApp'].forEach(id=>{
+    document.getElementById(id).classList.add('hidden');
+  });
+  document.getElementById(name).classList.remove('hidden');
+}
+
+async function doLogin(){
+  const email=document.getElementById('loginEmail').value.trim();
+  const password=document.getElementById('loginPassword').value;
+  const errEl=document.getElementById('loginError');
+  const btn=document.getElementById('loginBtn');
+  errEl.style.display='none';
+  btn.disabled=true;
+  btn.innerHTML='<span class="spinner"></span>Signing in…';
+  const {data,error}=await sb.auth.signInWithPassword({email,password});
+  if(error){
+    errEl.textContent=error.message;errEl.style.display='block';
+    btn.disabled=false;btn.textContent='Masuk / Sign In';return;
+  }
+  currentUser=data.user;
+  await handlePostLogin();
+  btn.disabled=false;btn.textContent='Masuk / Sign In';
+}
+
+async function handlePostLogin(){
+  // Check MFA factors
+  const {data:factors}=await sb.auth.mfa.listFactors();
+  const totpFactors=factors?.totp||[];
+
+  if(totpFactors.length===0){
+    // No MFA enrolled — show enroll screen
+    await startEnrollment();
+  } else {
+    // Has MFA — need to verify
+    const factor=totpFactors[0];
+    mfaFactorId=factor.id;
+    const {data:challenge,error}=await sb.auth.mfa.challenge({factorId:mfaFactorId});
+    if(error){alert(error.message);return;}
+    mfaChallengeId=challenge.id;
+    document.getElementById('verifyCode').value='';
+    showScreen('mfaVerifyScreen');
+    setTimeout(()=>document.getElementById('verifyCode').focus(),100);
+  }
+}
+
+async function startEnrollment(){
+  const {data,error}=await sb.auth.mfa.enroll({factorType:'totp',friendlyName:'Joker Karo JurTul'});
+  if(error){alert(error.message);return;}
+  mfaFactorId=data.id;
+  mfaChallengeId=null;
+  // Show QR code
+  document.getElementById('qrCodeImg').src=data.totp.qr_code;
+  document.getElementById('enrollCode').value='';
+  showScreen('mfaEnrollScreen');
+  setTimeout(()=>document.getElementById('enrollCode').focus(),100);
+}
+
+async function doEnrollVerify(){
+  const code=document.getElementById('enrollCode').value.trim();
+  const errEl=document.getElementById('enrollError');
+  const btn=document.getElementById('enrollBtn');
+  errEl.style.display='none';
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Verifying…';
+  // Challenge then verify
+  const {data:challenge,error:ce}=await sb.auth.mfa.challenge({factorId:mfaFactorId});
+  if(ce){errEl.textContent=ce.message;errEl.style.display='block';btn.disabled=false;btn.textContent='Verify & Continue';return;}
+  const {error:ve}=await sb.auth.mfa.verify({factorId:mfaFactorId,challengeId:challenge.id,code});
+  if(ve){errEl.textContent=ve.message;errEl.style.display='block';btn.disabled=false;btn.textContent='Verify & Continue';return;}
+  btn.disabled=false;btn.textContent='Verify & Continue';
+  await enterApp();
+}
+
+async function doMfaVerify(){
+  const code=document.getElementById('verifyCode').value.trim();
+  const errEl=document.getElementById('verifyError');
+  const btn=document.getElementById('verifyBtn');
+  errEl.style.display='none';
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Verifying…';
+  const {error}=await sb.auth.mfa.verify({factorId:mfaFactorId,challengeId:mfaChallengeId,code});
+  if(error){errEl.textContent=error.message;errEl.style.display='block';btn.disabled=false;btn.textContent='Verify';return;}
+  btn.disabled=false;btn.textContent='Verify';
+  await enterApp();
+}
+
+async function enterApp(){
+  const {data:{user}}=await sb.auth.getUser();
+  currentUser=user;
+  document.getElementById('userEmail').textContent=user.email;
+  showScreen('mainApp');
+  applyTranslations();
+  await loadGameState();
+}
+
+async function doLogout(){
+  await sb.auth.signOut();
+  currentUser=null;
+  showScreen('loginScreen');
+  document.getElementById('loginPassword').value='';
+  document.getElementById('loginError').style.display='none';
+}
+
+// Enter key support
+document.getElementById('loginPassword').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+document.getElementById('enrollCode').addEventListener('keydown',e=>{if(e.key==='Enter')doEnrollVerify();});
+document.getElementById('verifyCode').addEventListener('keydown',e=>{if(e.key==='Enter')doMfaVerify();});
+
+/* ══════════════════════════════════════════
+   GAME STATE PERSISTENCE
+══════════════════════════════════════════ */
+let saveTimeout=null;
+
+async function saveGameState(){
+  const state={
+    players,currentRound,gameHistory,
+    initialSum,masukanAmount,hargaMintik,hargaMilim,
+    beliAmounts,winTypeValues,potTotal,mandatoryBeli,gameOverTahan,gameOver,
+    inGame:!document.getElementById('gameSection').classList.contains('hidden'),
+  };
+  await sb.from('game_state').upsert({id:'active_game',state,updated_at:new Date().toISOString()});
+  // Show save indicator
+  const ind=document.getElementById('saveIndicator');
+  ind.textContent=t('saved');
+  ind.classList.add('show');
+  setTimeout(()=>ind.classList.remove('show'),2000);
+}
+
+function scheduleSave(){
+  clearTimeout(saveTimeout);
+  saveTimeout=setTimeout(saveGameState,800);
+}
+
+async function loadGameState(){
+  const {data,error}=await sb.from('game_state').select('state').eq('id','active_game').single();
+  if(error||!data) return; // No saved game, show setup
+  const s=data.state;
+  if(!s||!s.inGame) return; // Was on setup screen, nothing to restore
+
+  // Restore all state
+  players=s.players||[];
+  currentRound=s.currentRound||1;
+  gameHistory=s.gameHistory||[];
+  initialSum=s.initialSum||10;
+  masukanAmount=s.masukanAmount||1;
+  hargaMintik=s.hargaMintik||3;
+  hargaMilim=s.hargaMilim||5;
+  beliAmounts=s.beliAmounts||[2,3,5];
+  winTypeValues=s.winTypeValues||{masuk:-10,mintik:-30,milim:-50};
+  potTotal=s.potTotal||0;
+  mandatoryBeli=s.mandatoryBeli||[true,true,false];
+  gameOverTahan=s.gameOverTahan||-75;
+  gameOver=s.gameOver||false;
+
+  // Show game screen
+  document.getElementById('setupSection').classList.add('hidden');
+  document.getElementById('gameSection').classList.remove('hidden');
+  document.getElementById('currentRound').textContent=currentRound;
+  setupRoundInputs();
+  updateHistory();
+  updatePlayersTally();
+  updatePotDisplay();
+}
+
+/* ══════════════════════════════════════════
+   GAME STATE
+══════════════════════════════════════════ */
+const MAX_SCORE=75;
+let players=[],currentRound=1,gameHistory=[];
+let initialSum=10,masukanAmount=1,hargaMintik=3,hargaMilim=5;
+let beliAmounts=[2,3,5];
+let winTypeValues={masuk:-10,mintik:-30,milim:-50};
+let potTotal=0,mandatoryBeli=[true,true,false],gameOverTahan=-75,gameOver=false;
+
+function addPlayer(){
+  const input=document.getElementById('playerNameInput');
+  const name=input.value.trim();
+  if(!name)return alert(t('errName'));
+  if(players.some(p=>p.name===name))return alert(t('errExists'));
+  players.push({name,totalAngka:0,tahan:MAX_SCORE,buyCount:0,moneyWon:0,moneySpent:0,rounds:[],isDead:false});
+  input.value='';renderPlayersList();
+}
+document.getElementById('playerNameInput').addEventListener('keydown',e=>{if(e.key==='Enter')addPlayer();});
+
+function renderPlayersList(){
+  const el=document.getElementById('playersList');if(!el)return;el.innerHTML='';
+  players.forEach((p,i)=>{
+    const div=document.createElement('div');div.className='player-chip';
+    div.innerHTML=`<span>${p.name}</span><button class="btn-red btn-sm" onclick="removePlayer(${i})">${t('btnRemove')}</button>`;
+    el.appendChild(div);
+  });
+  const sb2=document.getElementById('startGameBtn');if(sb2)sb2.style.display=players.length>=2?'block':'none';
+}
+function removePlayer(i){players.splice(i,1);renderPlayersList();}
+
+function startGame(){
+  if(players.length<2)return alert(t('errMin2'));
+  initialSum=parseFloat(document.getElementById('initialSum').value)||10;
+  masukanAmount=parseFloat(document.getElementById('masukan').value)||1;
+  hargaMintik=parseFloat(document.getElementById('hargaMintik').value)||3;
+  hargaMilim=parseFloat(document.getElementById('hargaMilim').value)||5;
+  beliAmounts=[
+    parseFloat(document.getElementById('beliPertama').value)||2,
+    parseFloat(document.getElementById('beliKedua').value)||3,
+    parseFloat(document.getElementById('beliKetiga').value)||5,
+  ];
+  winTypeValues={
+    masuk:parseInt(document.getElementById('masukValue').value)||-10,
+    mintik:parseInt(document.getElementById('mintikValue').value)||-30,
+    milim:parseInt(document.getElementById('milimValue').value)||-50,
+  };
+  gameOverTahan=parseInt(document.getElementById('gameOverTahan').value)||-75;
+  mandatoryBeli=[
+    document.getElementById('mandatoryPertama').checked,
+    document.getElementById('mandatoryKedua').checked,
+    document.getElementById('mandatoryKetiga').checked,
+  ];
+  potTotal=initialSum*players.length;gameOver=false;
+  document.getElementById('setupSection').classList.add('hidden');
+  document.getElementById('gameSection').classList.remove('hidden');
+  setupRoundInputs();updatePotDisplay();
+  scheduleSave();
+}
+
+function updatePotDisplay(){const el=document.getElementById('potAmount');if(el)el.textContent=potTotal.toFixed(2);}
+
+function setupRoundInputs(){
+  const container=document.getElementById('scoreInputs');container.innerHTML='';
+  const buyNames=['Pertama','Kedua','Ketiga'];
+  players.forEach((player,i)=>{
+    if(player.isDead)return;
+    const col=document.createElement('div');col.className='score-col';col.id=`col_${i}`;
+    let beliHtml='';
+    if(player.buyCount>0){
+      const labels=Array.from({length:player.buyCount},(_,x)=>buyNames[x]).join(', ');
+      beliHtml=`<div class="beli-pill">🛒 ${t('beli')}: ${labels}</div>`;
+    }
+    const tidakEnabled=player.buyCount<mandatoryBeli.length&&!mandatoryBeli[player.buyCount];
+    col.innerHTML=`
+      <div class="score-col-name">${player.name}</div>
+      <div class="tahan-pill">${t('tahan')}: ${player.tahan}</div>
+      ${beliHtml}
+      <div class="field"><label>${t('winnerType')}</label>
+        <select id="wintype_${i}">
+          <option value="">${t('kalah')}</option>
+          <option value="regular">👑 Masuk (${winTypeValues.masuk})</option>
+          <option value="mintik">⭐ Mintik (${winTypeValues.mintik})</option>
+          <option value="milim">🔥 Milim (${winTypeValues.milim})</option>
+        </select>
+      </div>
+      <div class="field mt8"><label>${t('cardValue')}</label>
+        <input type="number" id="score_${i}" placeholder="${t('cardValue')}" min="0" />
+      </div>
+      <div class="tidakbeli-row${tidakEnabled?'':' disabled'}">
+        <input type="checkbox" id="tidakbeli_${i}" ${tidakEnabled?'':'disabled'} />
+        <label for="tidakbeli_${i}">${t('tidakBeli')}</label>
+      </div>`;
+    container.appendChild(col);
+    setTimeout(()=>{
+      const sel=document.getElementById(`wintype_${i}`);
+      if(sel)sel.addEventListener('change',()=>handleWinnerTypeChange(i));
+      const cb=document.getElementById(`tidakbeli_${i}`);
+      if(cb&&tidakEnabled)cb.addEventListener('change',()=>handleTidakBeliChange(i));
+    },0);
+  });
+}
+
+function handleTidakBeliChange(i){
+  const cb=document.getElementById(`tidakbeli_${i}`);
+  const sc=document.getElementById(`score_${i}`);
+  if(cb&&sc)sc.style.background=cb.checked?'rgba(192,57,43,.2)':'';
+}
+
+function handleWinnerTypeChange(i){
+  const winType=document.getElementById(`wintype_${i}`).value;
+  const scoreInput=document.getElementById(`score_${i}`);
+  const tidakCb=document.getElementById(`tidakbeli_${i}`);
+  const col=document.getElementById(`col_${i}`);
+  if(winType!==''){
+    col&&col.classList.add('is-winner');
+    players.forEach((_,j)=>{if(j!==i&&!players[j].isDead){const s=document.getElementById(`wintype_${j}`);if(s){s.value='';s.disabled=true;s.style.opacity='.45';}}});
+    if(scoreInput){scoreInput.value='0';scoreInput.disabled=true;}
+    if(tidakCb){tidakCb.checked=false;tidakCb.disabled=true;}
+  } else {
+    col&&col.classList.remove('is-winner');
+    players.forEach((_,j)=>{if(j!==i&&!players[j].isDead){const s=document.getElementById(`wintype_${j}`);if(s){s.disabled=false;s.style.opacity='';}}});
+    if(scoreInput){scoreInput.disabled=false;scoreInput.value='';}
+    const tidakEnabled=players[i].buyCount<mandatoryBeli.length&&!mandatoryBeli[players[i].buyCount];
+    if(tidakCb&&tidakEnabled)tidakCb.disabled=false;
+  }
+}
+
+function submitRound(){
+  const roundData=[];let winnerIndex=-1,winType='',winnerCardValue=0;
+  const survivingScores=[];
+  for(let i=0;i<players.length;i++){
+    if(players[i].isDead)continue;
+    const sel=document.getElementById(`wintype_${i}`);if(!sel)continue;
+    const wt=sel.value;
+    const scoreInput=document.getElementById(`score_${i}`);
+    const tidakCb=document.getElementById(`tidakbeli_${i}`);
+    if(!scoreInput||!tidakCb)continue;
+    const score=parseInt(scoreInput.value)||0;
+    const tidakBeli=tidakCb.checked;
+    if(wt!==''){winnerIndex=i;winType=wt;winnerCardValue=score;}
+    else{if(score<0){alert(`${t('errScore')} ${players[i].name}`);return;}survivingScores.push({playerIndex:i,score,tidakBeli});}
+  }
+  if(winnerIndex===-1){alert(t('errWinner'));return;}
+  let winnerScore=winType==='regular'?winTypeValues.masuk:winType==='mintik'?winTypeValues.mintik:winTypeValues.milim;
+  let masukanCollected=0;
+  for(let i=0;i<players.length;i++){
+    if(players[i].isDead)continue;
+    if(i===winnerIndex){
+      roundData.push({playerIndex:i,score:winnerScore,winType,isWinner:true,isBuying:false,isDead:false,resetAngka:false,newCumulativeAngka:null});
+    } else {
+      const pd=survivingScores.find(s=>s.playerIndex===i);if(!pd)continue;
+      let finalScore=pd.score,isBuying=false,isDying=false,resetAngka=false,newCumulativeAngka=null;
+      const needsToBuy=pd.tidakBeli||finalScore>players[i].tahan;
+      if(needsToBuy){
+        const nextBuyIndex=players[i].buyCount;
+        const alivePlayers=players.filter(p=>!p.isDead).length;
+        if(alivePlayers<=2||nextBuyIndex>=3){isDying=true;}
+        else{
+          let worstCumulative=-Infinity,buyFromIndex=-1;
+          for(let j=0;j<players.length;j++){
+            if(j===i||players[j].isDead)continue;
+            let proj;
+            if(j===winnerIndex){proj=players[j].totalAngka+winnerCardValue+winnerScore;}
+            else{const opd=survivingScores.find(s=>s.playerIndex===j);if(!opd||opd.score>players[j].tahan)continue;proj=players[j].totalAngka+opd.score;}
+            if(proj>worstCumulative){worstCumulative=proj;buyFromIndex=j;}
+          }
+          if(buyFromIndex===-1){isDying=true;}
+          else{
+            const isMandatory=nextBuyIndex<mandatoryBeli.length&&mandatoryBeli[nextBuyIndex];
+            if(!isMandatory&&pd.tidakBeli){isDying=true;}
+            else{isBuying=true;resetAngka=true;newCumulativeAngka=worstCumulative;finalScore=pd.score;}
+          }
+        }
+      }
+      roundData.push({playerIndex:i,score:finalScore,winType:'',isWinner:false,isBuying,isDead:isDying,resetAngka,newCumulativeAngka});
+      if(!isDying){let pay=masukanAmount;if(winType==='mintik')pay+=hargaMintik;if(winType==='milim')pay+=hargaMilim;masukanCollected+=pay;}
+    }
+  }
+  roundData.forEach(data=>{
+    const player=players[data.playerIndex];
+    if(data.resetAngka&&data.newCumulativeAngka!==null){player.totalAngka=data.newCumulativeAngka;}
+    else{player.totalAngka+=data.score;}
+    player.tahan=MAX_SCORE-player.totalAngka;
+    if(data.isBuying){player.buyCount++;potTotal+=(beliAmounts[player.buyCount-1]||0);}
+    if(data.isDead)player.isDead=true;
+    if(data.isWinner){player.moneyWon+=masukanCollected;}
+    else if(!data.isDead){let pay=masukanAmount;if(winType==='mintik')pay+=hargaMintik;if(winType==='milim')pay+=hargaMilim;player.moneySpent+=pay;}
+    player.rounds.push(data);
+  });
+  gameHistory.push({round:currentRound,data:[...roundData],masukanCollected});
+  updateHistory();updatePlayersTally();updatePotDisplay();
+  scheduleSave();
+  const alivePlayers=players.filter(p=>!p.isDead);
+  const someoneReachedGoal=players.some(p=>p.totalAngka<=gameOverTahan);
+  if(alivePlayers.length<=1||someoneReachedGoal){if(!gameOver)endGame();return;}
+  else if(gameOver){gameOver=false;const winner=[...players].sort((a,b)=>b.tahan-a.tahan)[0];winner.moneyWon-=potTotal;updateHistory();updatePlayersTally();}
+  currentRound++;
+  document.getElementById('currentRound').textContent=currentRound;
+  setupRoundInputs();updateHistory();updatePlayersTally();updatePotDisplay();
+}
+
+function updateHistory(){
+  const el=document.getElementById('roundHistory');el.innerHTML='';
+  if(!gameHistory.length)return;
+  const table=document.createElement('table');
+  const thead=document.createElement('thead');const hRow=document.createElement('tr');
+  const rTh=document.createElement('th');rTh.textContent='#';hRow.appendChild(rTh);
+  players.forEach(p=>{const th=document.createElement('th');th.textContent=p.name;hRow.appendChild(th);});
+  thead.appendChild(hRow);table.appendChild(thead);
+  const tbody=document.createElement('tbody');const cumulatives=players.map(()=>[0]);
+  gameHistory.forEach(round=>{
+    const row=document.createElement('tr');
+    const rc=document.createElement('td');rc.className='td-round';rc.textContent=round.round;row.appendChild(rc);
+    players.forEach((player,pi)=>{
+      const cell=document.createElement('td');
+      const pd=round.data.find(d=>d.playerIndex===pi);
+      const prevCum=cumulatives[pi][cumulatives[pi].length-1];
+      if(pd){
+        let newCum,curAngka;
+        if(pd.resetAngka&&pd.newCumulativeAngka!==null){newCum=pd.newCumulativeAngka;curAngka=pd.score;}
+        else{curAngka=pd.score;newCum=prevCum+curAngka;}
+        cumulatives[pi].push(newCum);
+        const tahan=MAX_SCORE-newCum;
+        let icon='';
+        if(pd.isWinner){if(pd.winType==='milim'){cell.className='td-winner-milim';icon=' 🔥';}else if(pd.winType==='mintik'){cell.className='td-winner-mintik';icon=' ⭐';}else{cell.className='td-winner-masuk';icon=' 👑';}}
+        else if(pd.isBuying){cell.className='td-buying';icon=' 💰';}
+        else if(pd.isDead){cell.className='td-dead';icon=` 💀 ${t('dead')}`;}
+        if(round.round===1){cell.textContent=`${curAngka} / ${tahan}${icon}`;}
+        else{const sign=curAngka>=0?'+':'';cell.textContent=`${newCum} (${prevCum}${sign}${curAngka}) / ${tahan}${icon}`;}
+      } else {cell.className='td-dead';cell.textContent='—';cumulatives[pi].push(prevCum);}
+      row.appendChild(cell);
+    });
+    tbody.appendChild(row);
+  });
+  if(gameOver){
+    const goRow=document.createElement('tr');const goCell=document.createElement('td');
+    goCell.colSpan=players.length+1;goCell.className='td-gameover';
+    goCell.textContent=t('gameOver');goRow.appendChild(goCell);tbody.appendChild(goRow);
+  }
+  table.appendChild(tbody);el.appendChild(table);
+}
+
+function updatePlayersTally(){
+  const el=document.getElementById('playerTally');el.innerHTML='';
+  const stats=players.map(player=>{
+    let regularWins=0,mintikWins=0,milimWins=0,beliTotal=0;
+    player.rounds.forEach(r=>{
+      if(r.isWinner){if(r.winType==='milim')milimWins++;else if(r.winType==='mintik')mintikWins++;else regularWins++;}
+      if(r.isBuying){const bn=player.rounds.slice(0,player.rounds.indexOf(r)+1).filter(x=>x.isBuying).length;beliTotal+=(beliAmounts[bn-1]||0);}
+    });
+    return{name:player.name,tahan:player.tahan,regularWins,mintikWins,milimWins,narik:player.moneyWon,kalah:player.moneySpent,beliCount:player.buyCount,beliTotal,isDead:player.isDead};
+  });
+  const alive=stats.filter(s=>!s.isDead);
+  const hasMangalabas=gameOver&&alive.length===1&&players.length>1;
+  stats.sort((a,b)=>b.tahan-a.tahan);
+  stats.forEach(stat=>{
+    const div=document.createElement('div');div.className='tally-item'+(stat.isDead?' dead-player':'');
+    let badge='';
+    if(hasMangalabas&&!stat.isDead)badge=`<span class="badge badge-labas">🏆 ${t('labas')} +${potTotal.toFixed(2)}</span>`;
+    else if(stat.isDead)badge=`<span class="badge badge-dead">💀 ${t('dead')}</span>`;
+    const beliTxt=stat.beliCount>0?`${stat.beliTotal.toFixed(2)} (${stat.beliCount}x)`:'—';
+    div.innerHTML=`
+      <div class="tally-name">${stat.name}${badge?' '+badge:''}<span style="color:var(--slate);font-size:.85rem;font-family:'DM Mono',monospace;"> T:${stat.tahan}</span></div>
+      <div class="tally-stats">
+        <div class="tally-stat"><div class="tally-stat-val color-gold">${stat.regularWins}</div><div class="tally-stat-lbl">👑 Masuk</div></div>
+        <div class="tally-stat"><div class="tally-stat-val color-purple">${stat.mintikWins}</div><div class="tally-stat-lbl">⭐ Mintik</div></div>
+        <div class="tally-stat"><div class="tally-stat-val color-red">${stat.milimWins}</div><div class="tally-stat-lbl">🔥 Milim</div></div>
+        <div class="tally-stat"><div class="tally-stat-val color-orange">${beliTxt}</div><div class="tally-stat-lbl">🛒 Beli</div></div>
+        <div class="tally-stat"><div class="tally-stat-val color-green">+${stat.narik.toFixed(2)}</div><div class="tally-stat-lbl">💰 Narik</div></div>
+        <div class="tally-stat"><div class="tally-stat-val color-red">−${stat.kalah.toFixed(2)}</div><div class="tally-stat-lbl">💸 Kalah</div></div>
+      </div>`;
+    el.appendChild(div);
+  });
+}
+
+function endGame(){
+  const winner=[...players].sort((a,b)=>b.tahan-a.tahan)[0];
+  winner.moneyWon+=potTotal;gameOver=true;
+  updateHistory();updatePlayersTally();updatePotDisplay();
+  scheduleSave();
+  let msg=`🎉 ${t('alertGameOver')}\n\n${t('alertResults')}:\n\n`;
+  [...players].sort((a,b)=>b.tahan-a.tahan).forEach((p,i)=>{msg+=`#${i+1}: ${p.name} — ${t('alertTahan')}: ${p.tahan}, ${t('alertNarik')}: ${p.moneyWon.toFixed(2)}\n`;});
+  msg+=`\n🏆 ${winner.name} ${t('alertWins')} ${potTotal.toFixed(2)}!`;
+  alert(msg);
+}
+
+function resetGame(){
+  players=[];currentRound=1;gameHistory=[];gameOver=false;
+  ['roundHistory','playerTally'].forEach(id=>{const e=document.getElementById(id);if(e)e.innerHTML='';});
+  document.getElementById('setupSection').classList.remove('hidden');
+  document.getElementById('gameSection').classList.add('hidden');
+  document.getElementById('currentRound').textContent='1';
+  renderPlayersList();updatePotDisplay();
+  // Clear saved game state
+  sb.from('game_state').upsert({id:'active_game',state:{inGame:false},updated_at:new Date().toISOString()});
+}
+
+/* ── INIT ── */
+(async()=>{
+  const {data:{session}}=await sb.auth.getSession();
+  if(session){
+    // Check if MFA is satisfied
+    const aal=session.aal;
+    if(aal==='aal2'||!session){
+      await enterApp();
+    } else {
+      // Session exists but MFA not verified yet
+      currentUser=session.user;
+      await handlePostLogin();
+    }
+  } else {
+    showScreen('loginScreen');
+  }
+})();
+</script>
+</body>
+</html>
